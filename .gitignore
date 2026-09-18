@@ -1,0 +1,21 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Environments
+.env
+.env.local
+firebase_service_account.json
+*.pem
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log

@@ -1,0 +1,71 @@
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from .config import ALLOWED_ORIGINS, OPENAI_MODEL, OPENAI_API_KEY
+from .services.firestore_service import seed_firestore_if_empty, is_firestore_connected
+from .api.data import router as data_router
+from .api.chat import router as chat_router
+from .api.conversations import router as conversations_router
+from .api.papers import router as papers_router
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup actions
+    seed_firestore_if_empty()
+    yield
+    # Shutdown actions
+
+app = FastAPI(
+    title="Pet Research Navigator API",
+    description="반려동물 연구논문 및 시계열 연구동향 AI 비서 백엔드 서비스 (FastAPI + Firestore + OpenAI Context Injection)",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan
+)
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register API Routers
+app.include_router(data_router)
+app.include_router(chat_router)
+app.include_router(conversations_router)
+app.include_router(papers_router)
+
+@app.get("/api/info", summary="Root Info")
+def root():
+    return {
+        "service": "Pet Research Navigator API",
+        "description": "반려동물 연구논문·연구동향 AI 비서 API 서비스",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
+
+@app.get("/api/health", summary="헬스체크 및 슬립 상태 안내")
+def health_check():
+    """
+    Render 무료 티어의 슬립(콜드스타트) 완화 및 서버 상태 확인용 헬스체크 엔드포인트.
+    """
+    return {
+        "status": "online",
+        "database": "firestore" if is_firestore_connected() else "local_store",
+        "ai_engine": "openai" if (OPENAI_API_KEY and OPENAI_API_KEY.strip()) else "smart_fallback_engine",
+        "model": OPENAI_MODEL,
+        "cold_start_tip": "Render 무료 인스턴스 슬립 해제 완료 (정상 응답 중)"
+    }
+
+# Mount frontend for local unified preview if frontend directory exists
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+if FRONTEND_DIR.exists():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+

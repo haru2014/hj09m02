@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pet Research Navigator - 반려동물 연구논문 및 시계열 연구동향 AI 비서</title>
+  <meta name="description" content="반려동물 연구논문 150편과 16개년 시계열 연구동향을 분석하고 데이터 요약을 GPT에 컨텍스트로 주입하여 맞춤형 인사이트를 제공하는 AI 비서 서비스">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js for Time-Series Visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Marked.js for AI Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Navigation Header -->
+    <header class="app-header" id="mainHeader">
+      <div class="header-left">
+        <div class="brand-logo" id="brandLogo">
+          <div class="logo-icon">🐾</div>
+          <div class="brand-text">
+            <h1 class="brand-title">Pet Research Navigator</h1>
+            <span class="brand-subtitle">반려동물 연구논문 · 시계열 연구동향 AI 비서</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs" role="tablist" id="mainNavTabs">
+          <button class="tab-btn active" data-tab="tab-chat" id="tabBtnChat" role="tab" aria-selected="true">
+            <span class="tab-icon">💬</span> AI 연구 비서
+          </button>
+          <button class="tab-btn" data-tab="tab-data" id="tabBtnData" role="tab" aria-selected="false">
+            <span class="tab-icon">📊</span> 시계열 데이터 관리
+          </button>
+          <button class="tab-btn" data-tab="tab-history" id="tabBtnHistory" role="tab" aria-selected="false">
+            <span class="tab-icon">📜</span> 대화 기록
+          </button>
+          <button class="tab-btn" data-tab="tab-papers" id="tabBtnPapers" role="tab" aria-selected="false">
+            <span class="tab-icon">📚</span> 논문 아카이브
+          </button>
+        </nav>
+      </div>
+
+      <div class="header-right">
+        <!-- API Connection Status -->
+        <div class="status-indicator online" id="apiStatusBadge" title="백엔드 API 서버 연결 상태">
+          <span class="status-dot"></span>
+          <span class="status-label" id="apiStatusLabel">API 확인 중...</span>
+        </div>
+
+        <!-- Server Endpoint Settings Button -->
+        <button class="icon-btn" id="btnServerConfig" title="API 서버 주소 설정">
+          ⚙️
+        </button>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" title="다크/라이트 모드 전환">
+          <span id="themeIcon">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-content" id="mainContainer">
+      
+      <!-- ==================================================== -->
+      <!-- TAB 1: AI Chat & Research Trend Navigator            -->
+      <!-- ==================================================== -->
+      <section class="tab-pane active" id="tab-chat" role="tabpanel">
+        <!-- Topic Selection Bar -->
+        <div class="topic-selection-bar" id="topicSelectionBar">
+          <span class="topic-bar-label">🔍 연구 주제 선택:</span>
+          <div class="topic-chips" id="topicChipsContainer">
+            <button class="chip-btn active" data-topic="관절" id="chipJoint">근골격·관절</button>
+            <button class="chip-btn" data-topic="행동" id="chipBehavior">행동·인지</button>
+            <button class="chip-btn" data-topic="피부" id="chipSkin">피부·알레르기</button>
+            <button class="chip-btn" data-topic="질병" id="chipDisease">내과·질병</button>
+            <button class="chip-btn" data-topic="심장" id="chipCardiology">심장·호흡</button>
+            <button class="chip-btn" data-topic="영양" id="chipNutrition">영양·비만</button>
+            <button class="chip-btn" data-topic="노령" id="chipGeriatric">노령·종양</button>
+          </div>
+        </div>
+
+        <!-- Summary Metric Cards (Context Injection Preview) -->
+        <div class="summary-cards-grid" id="summaryCardsGrid">
+          <div class="metric-card glass-card" id="cardPeriod">
+            <div class="card-icon">📅</div>
+            <div class="card-content">
+              <span class="metric-title">분석 기간</span>
+              <span class="metric-value" id="summaryPeriod">2010 ~ 2025</span>
+              <span class="metric-desc" id="summaryPeriodDesc">16개년 시계열 추적</span>
+            </div>
+          </div>
+
+          <div class="metric-card glass-card" id="cardCount">
+            <div class="card-icon">📑</div>
+            <div class="card-content">
+              <span class="metric-title">분석 데이터 포인트</span>
+              <span class="metric-value" id="summaryCount">16개</span>
+              <span class="metric-desc" id="summaryTotalValue">연구 활동 누적 지수: -</span>
+            </div>
+          </div>
+
+          <div class="metric-card glass-card" id="cardMetrics">
+            <div class="card-icon">📈</div>
+            <div class="card-content">
+              <span class="metric-title">연평균 연구 지표</span>
+              <span class="metric-value" id="summaryAverage">-</span>
+              <span class="metric-desc" id="summaryRange">최대: - | 최소: -</span>
+            </div>
+          </div>
+
+          <div class="metric-card glass-card" id="cardTrend">
+            <div class="card-icon">🚀</div>
+            <div class="card-content">
+              <span class="metric-title">최근 연구 트렌드</span>
+              <span class="metric-value trend-highlight" id="summaryTrend">-</span>
+              <span class="metric-desc" id="summaryTrendMethod">핵심 기법: -</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat & Chart Dual Grid -->
+        <div class="chat-dashboard-grid" id="chatDashboardGrid">
+          <!-- Left Column: Trend Chart & Methodology Shifts -->
+          <div class="chart-column">
+            <div class="panel-box glass-card" id="trendChartBox">
+              <div class="panel-header">
+                <div class="panel-title-wrap">
+                  <h2 class="panel-title" id="chartHeaderTitle">📊 연도별 연구량 및 트렌드 변화</h2>
+                  <span class="panel-badge" id="chartTopicBadge">근골격·관절</span>
+                </div>
+                <button class="btn-refresh-chart" id="btnRefreshSummary" title="요약 및 차트 새로고침">🔄</button>
+              </div>
+
+              <div class="chart-container-wrapper">
+                <canvas id="timeSeriesChart" id="timeSeriesCanvas"></canvas>
+              </div>
+
+              <!-- Methodology Evolution Timeline -->
+              <div class="evolution-timeline" id="evolutionTimeline">
+                <h3 class="timeline-title">🔬 연구 방법론 패러다임 변화 (시계열 흐름)</h3>
+                <div class="timeline-steps">
+                  <div class="step-item" id="stepEarly">
+                    <span class="step-year">2010~2015</span>
+                    <span class="step-badge badge-early">초기</span>
+                    <p class="step-desc" id="descEarly">전통적 X-ray 영상진단 및 촉진, 외과적 수술 후 임상 관찰 중심</p>
+                  </div>
+                  <div class="step-arrow">➔</div>
+                  <div class="step-item" id="stepMid">
+                    <span class="step-year">2016~2020</span>
+                    <span class="step-badge badge-mid">중기</span>
+                    <p class="step-desc" id="descMid">Force plate 압력판을 통한 정량적 체중부하 및 재활 물리치료 도입</p>
+                  </div>
+                  <div class="step-arrow">➔</div>
+                  <div class="step-item" id="stepRecent">
+                    <span class="step-year">2021~2025</span>
+                    <span class="step-badge badge-recent">최근</span>
+                    <p class="step-desc" id="descRecent">IMU 센서, AI 컴퓨터 비전, 웨어러블 일상생활 비침습 연속 모니터링</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: AI Research Assistant Chat -->
+          <div class="chat-column">
+            <div class="chat-box glass-card" id="chatBoxContainer">
+              <div class="chat-header" id="chatHeader">
+                <div class="chat-header-info">
+                  <div class="bot-avatar">🤖</div>
+                  <div>
+                    <h2 class="chat-title">AI 연구동향 비서</h2>
+                    <span class="chat-subtitle" id="chatContextSubtitle">
+                      <span class="context-pulse"></span> 데이터 요약(Context) 자동 주입 중
+                    </span>
+                  </div>
+                </div>
+                <div class="chat-header-actions">
+                  <button class="btn-clear-chat" id="btnClearChat" title="새 대화 시작">✨ 새 대화</button>
+                </div>
+              </div>
+
+              <!-- Chat Message Stream -->
+              <div class="chat-messages" id="chatMessagesStream">
+                <!-- Welcome Bot Message -->
+                <div class="message-bubble bot-message" id="welcomeMessage">
+                  <div class="message-avatar">🤖</div>
+                  <div class="message-content">
+                    <div class="message-text">
+                      <p>안녕하세요! <strong>반려동물 연구논문 및 연구동향 AI 비서</strong>입니다. 🐾</p>
+                      <p>선택하신 <strong>[<span id="welcomeTopic">근골격·관절</span>]</strong> 분야의 시계열 연구 데이터와 150편의 축적된 논문 요약을 바탕으로, 연구 현황부터 최신 방법론 변화까지 체계적으로 답변해 드립니다.</p>
+                      <p>궁금한 점을 자유롭게 질문하시거나 아래 추천 질문을 클릭해 보세요!</p>
+                    </div>
+                    <div class="message-meta">
+                      <span class="message-time">방금 전</span>
+                      <span class="message-tag">시스템 안내</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Prompt Suggestions -->
+              <div class="quick-prompts-bar" id="quickPromptsBar">
+                <button class="prompt-chip" id="promptRecentTrend">🔥 최근 연구동향 분석해줘</button>
+                <button class="prompt-chip" id="promptMethodShift">💡 연구방법이 어떻게 바뀌었어?</button>
+                <button class="prompt-chip" id="promptKeyPapers">📖 대표 논문과 초록 알려줘</button>
+              </div>
+
+              <!-- Chat Input Area -->
+              <form class="chat-input-form" id="chatInputForm">
+                <div class="input-wrapper">
+                  <input 
+                    type="text" 
+                    id="chatInputText" 
+                    class="chat-input-field" 
+                    placeholder="예: 관절 연구동향 알려줘 / AI 보행분석 논문 찾아줘..." 
+                    autocomplete="off"
+                    required
+                  >
+                  <button type="submit" class="btn-send-message" id="btnSendMessage" title="전송">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="input-footer">
+                  <span class="input-hint">💡 Enter로 전송 (데이터 요약 자동 주입 및 대화 기록 자동 저장)</span>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================== -->
+      <!-- TAB 2: Time-Series Data Management (CRUD)            -->
+      <!-- ==================================================== -->
+      <section class="tab-pane" id="tab-data" role="tabpanel">
+        <div class="data-manage-container">
+          <!-- Top Control Toolbar -->
+          <div class="data-toolbar glass-card" id="dataToolbar">
+            <div class="toolbar-left">
+              <div class="filter-group">
+                <label for="filterTopicSelect">주제 필터:</label>
+                <select id="filterTopicSelect" class="form-select">
+                  <option value="전체">전체 주제 (All)</option>
+                  <option value="관절">근골격·관절</option>
+                  <option value="행동">행동·인지</option>
+                  <option value="피부">피부·알레르기</option>
+                  <option value="질병">내과·질병</option>
+                  <option value="심장">심장·호흡</option>
+                  <option value="영양">영양·비만</option>
+                  <option value="노령">노령·종양</option>
+                </select>
+              </div>
+
+              <div class="search-input-group">
+                <input type="text" id="dataSearchInput" class="form-input" placeholder="메모 / 연구방법 검색...">
+              </div>
+            </div>
+
+            <div class="toolbar-right">
+              <!-- Export Buttons (Bonus feature) -->
+              <button class="btn btn-outline" id="btnExportCsv" title="CSV 다운로드">
+                📥 CSV 내보내기
+              </button>
+              <button class="btn btn-outline" id="btnExportJson" title="JSON 다운로드">
+                📥 JSON 내보내기
+              </button>
+              <!-- Add New Data Button -->
+              <button class="btn btn-primary" id="btnOpenAddModal">
+                ➕ 새 데이터 추가
+              </button>
+            </div>
+          </div>
+
+          <!-- Data Summary Stats Banner -->
+          <div class="data-stats-banner" id="dataStatsBanner">
+            <div class="stat-pill">
+              <span class="stat-label">필터링된 데이터:</span>
+              <strong class="stat-num" id="statFilteredCount">0개</strong>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-label">평균 측정치:</span>
+              <strong class="stat-num" id="statAverageValue">0</strong>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-label">측정치 합계:</span>
+              <strong class="stat-num" id="statTotalValue">0</strong>
+            </div>
+          </div>
+
+          <!-- Data Records Table -->
+          <div class="table-card glass-card" id="dataTableCard">
+            <div class="table-responsive">
+              <table class="data-table" id="timeseriesTable">
+                <thead>
+                  <tr>
+                    <th style="width: 130px;">일자 (Date)</th>
+                    <th style="width: 120px;">주제 (Topic)</th>
+                    <th style="width: 110px;">측정치 (Value)</th>
+                    <th>연구 메모 및 방법론 요약 (Memo)</th>
+                    <th style="width: 160px;">등록 일시</th>
+                    <th style="width: 150px; text-align: center;">관리</th>
+                  </tr>
+                </thead>
+                <tbody id="timeseriesTableBody">
+                  <!-- Dynamic rows rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Table Empty State -->
+            <div class="table-empty-state" id="tableEmptyState" style="display: none;">
+              <div class="empty-icon">📭</div>
+              <p>조건에 맞는 시계열 데이터가 없습니다.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================== -->
+      <!-- TAB 3: Conversation History                          -->
+      <!-- ==================================================== -->
+      <section class="tab-pane" id="tab-history" role="tabpanel">
+        <div class="history-container">
+          <div class="section-heading-wrap">
+            <div>
+              <h2 class="section-title">📜 저장된 대화 기록</h2>
+              <p class="section-desc">AI 비서와 나눈 질의응답 이력을 확인하고, 언제든지 이전 대화를 불러와 이어서 진행할 수 있습니다.</p>
+            </div>
+            <button class="btn btn-outline" id="btnRefreshHistory">🔄 목록 새로고침</button>
+          </div>
+
+          <!-- Conversations Grid -->
+          <div class="conversations-grid" id="conversationsGrid">
+            <!-- Dynamic conversation cards -->
+          </div>
+
+          <!-- Empty History State -->
+          <div class="history-empty-state glass-card" id="historyEmptyState" style="display: none;">
+            <div class="empty-icon">💬</div>
+            <h3>저장된 대화 기록이 없습니다.</h3>
+            <p>AI 연구 비서 탭에서 질문을 시작하면 자동으로 대화 세션이 저장됩니다.</p>
+            <button class="btn btn-primary" id="btnGoToChat">AI 비서와 대화하러 가기</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================================================== -->
+      <!-- TAB 4: Research Papers Explorer                      -->
+      <!-- ==================================================== -->
+      <section class="tab-pane" id="tab-papers" role="tabpanel">
+        <div class="papers-container">
+          <div class="section-heading-wrap">
+            <div>
+              <h2 class="section-title">📚 반려동물 연구논문 아카이브</h2>
+              <p class="section-desc">2010년부터 2025년까지 수집·구조화된 154편의 수의학 및 반려동물 핵심 연구논문 데이터베이스입니다.</p>
+            </div>
+            <div class="papers-count-badge">
+              총 <strong id="papersTotalCount">154</strong>편 수록
+            </div>
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div class="papers-toolbar glass-card" id="papersToolbar">
+            <div class="filter-item">
+              <label for="paperTopicFilter">연구 분야:</label>
+              <select id="paperTopicFilter" class="form-select">
+                <option value="전체">전체 분야</option>
+                <option value="관절">근골격·관절</option>
+                <option value="행동">행동·인지</option>
+                <option value="피부">피부·알레르기</option>
+                <option value="질병">내과·질병</option>
+                <option value="심장">심장·호흡</option>
+                <option value="영양">영양·비만</option>
+                <option value="노령">노령·종양</option>
+              </select>
+            </div>
+
+            <div class="filter-item">
+              <label for="paperYearFilter">발행 연도:</label>
+              <select id="paperYearFilter" class="form-select">
+                <option value="">전체 연도</option>
+                <option value="2025">2025년</option>
+                <option value="2024">2024년</option>
+                <option value="2023">2023년</option>
+                <option value="2022">2022년</option>
+                <option value="2021">2021년</option>
+                <option value="2020">2020년</option>
+                <option value="2018">2018년 이전</option>
+              </select>
+            </div>
+
+            <div class="search-item">
+              <input type="text" id="paperSearchInput" class="form-input" placeholder="논문 제목, 연구방법, 키워드 검색...">
+            </div>
+          </div>
+
+          <!-- Papers Cards Grid -->
+          <div class="papers-grid" id="papersGrid">
+            <!-- Dynamic paper cards -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- App Footer -->
+    <footer class="app-footer" id="mainFooter">
+      <div class="footer-content">
+        <p>🐾 <strong>Pet Research Navigator</strong> | AI Agent 미션: 나만의 AI 비서 구축</p>
+        <p class="footer-meta">FastAPI · Firebase Firestore · OpenAI Context Injection · Vanilla HTML5/CSS3/ES6</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL 1: Add / Edit Data Modal                       -->
+  <!-- ==================================================== -->
+  <div class="modal-backdrop" id="dataModalBackdrop">
+    <div class="modal-box glass-card" id="dataModalBox" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">➕ 시계열 데이터 추가</h3>
+        <button class="btn-close-modal" id="btnCloseDataModal" title="닫기">&times;</button>
+      </div>
+      <form id="dataForm" class="modal-form">
+        <input type="hidden" id="editItemId">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formDataDate">일자 (Date) *</label>
+            <input type="date" id="formDataDate" class="form-input" required value="2025-01-01">
+          </div>
+          <div class="form-group">
+            <label for="formDataTopic">연구 주제 *</label>
+            <select id="formDataTopic" class="form-select" required>
+              <option value="관절">근골격·관절</option>
+              <option value="행동">행동·인지</option>
+              <option value="피부">피부·알레르기</option>
+              <option value="질병">내과·질병</option>
+              <option value="심장">심장·호흡</option>
+              <option value="영양">영양·비만</option>
+              <option value="노령">노령·종양</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="formDataValue">측정치 (Value / 연구 지수) *</label>
+          <input type="number" step="0.1" id="formDataValue" class="form-input" required placeholder="예: 55.4">
+          <span class="form-hint">해당 기간 동안의 논문 수 또는 연구 활동 지수</span>
+        </div>
+
+        <div class="form-group">
+          <label for="formDataMemo">연구 메모 및 핵심 키워드 (Memo) *</label>
+          <textarea id="formDataMemo" class="form-textarea" rows="3" required placeholder="예: IMU 센서 및 AI 기반 비침습 보행분석 연구 증가"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="btnCancelDataModal">취소</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveData">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL 2: Paper Detail Modal                          -->
+  <!-- ==================================================== -->
+  <div class="modal-backdrop" id="paperModalBackdrop">
+    <div class="modal-box modal-lg glass-card" id="paperModalBox" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="paper-badge-species" id="modalPaperSpecies">Dog</span>
+          <h3 class="modal-title" id="modalPaperTitle">논문 상세 정보</h3>
+        </div>
+        <button class="btn-close-modal" id="btnClosePaperModal">&times;</button>
+      </div>
+      <div class="modal-body" id="modalPaperBody">
+        <!-- Dynamic paper details -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL 3: Server Endpoint Config Modal                -->
+  <!-- ==================================================== -->
+  <div class="modal-backdrop" id="serverModalBackdrop">
+    <div class="modal-box glass-card" id="serverModalBox" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ API 서버 주소 설정</h3>
+        <button class="btn-close-modal" id="btnCloseServerModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Vercel 배포 환경 또는 다른 호스트에서 실행 시 백엔드 API 주소를 직접 지정할 수 있습니다.</p>
+        <div class="form-group">
+          <label for="serverBaseUrlInput">API Base URL:</label>
+          <input type="url" id="serverBaseUrlInput" class="form-input" placeholder="http://127.0.0.1:8000 또는 Render 배포 URL">
+          <span class="form-hint">비워둘 경우 현재 접속 중인 오리진 또는 기본 로컬 주소(8000)가 사용됩니다.</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="btnResetServerUrl">기본값 복원</button>
+          <button type="button" class="btn btn-primary" id="btnSaveServerUrl">저장 및 다시 연결</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

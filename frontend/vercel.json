@@ -1,8 +1,6 @@
 {
   "version": 2,
-  "name": "pet-research-navigator",
   "cleanUrls": true,
-  "outputDirectory": "frontend",
   "headers": [
     {
       "source": "/(.*)",

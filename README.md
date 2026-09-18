@@ -67,9 +67,9 @@
 
 ## 4. 배포 URL 안내
 
-- **프론트엔드 서비스 URL (Vercel)**: `https://pet-research-navigator.vercel.app` *(배포 준비 완료)*
-- **백엔드 API 서버 URL (Render)**: `https://pet-research-navigator-api.onrender.com` *(배포 준비 완료)*
-- **대화형 Swagger UI 문서**: `https://pet-research-navigator-api.onrender.com/docs` (또는 로컬 `http://127.0.0.1:8000/docs`)
+- **프론트엔드 서비스 URL (Vercel)**: https://hj09m0201.vercel.app/
+- **백엔드 API 서버 URL (Render)**: https://hj09m02-api.onrender.com
+- **대화형 Swagger UI 문서**: https://hj09m02-api.onrender.com/docs
 
 > [!TIP]
 > **Render 무료 티어 슬립(콜드스타트) 대응 방안**  

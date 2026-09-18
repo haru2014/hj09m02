@@ -1,6 +1,6 @@
 import logging
 from typing import List, Dict, Any, Optional
-from ..config import OPENAI_API_KEY, OPENAI_MODEL
+from ..config import GEMINI_API_KEY, GEMINI_MODEL, OPENAI_API_KEY, OPENAI_MODEL, AI_PROVIDER
 from ..models.schemas import DataSummaryResponse
 from ..data.seed_data import match_topic_from_query
 
@@ -52,7 +52,7 @@ def generate_smart_fallback_reply(
     papers: List[Dict[str, Any]]
 ) -> str:
     """
-    Intelligent template fallback when OpenAI API key is not configured or in offline mode.
+    Intelligent template fallback when API key is not configured or in offline mode.
     Fully conforms to the 5-step answer architecture required in 09m02계획.txt.
     """
     first_paper = papers[0] if papers else {}
@@ -97,8 +97,8 @@ async def generate_ai_response(
     chat_history: Optional[List[Dict[str, str]]] = None
 ) -> Dict[str, Any]:
     """
-    Generates an AI response using OpenAI GPT with system prompt context injection,
-    or falls back gracefully to smart structured synthesis.
+    Generates an AI response using Google Gemini (default) or OpenAI GPT with
+    system prompt context injection, or falls back gracefully to smart structured synthesis.
     """
     matched_topic = topic if topic and topic != "전체" else match_topic_from_query(message)
     papers_context = format_papers_context(papers)
@@ -118,9 +118,63 @@ async def generate_ai_response(
     )
 
     reply_text = ""
-    used_openai = False
+    engine_used = "fallback"
 
-    if OPENAI_API_KEY and OPENAI_API_KEY.strip() != "":
+    # 1. Try Google Gemini if GEMINI_API_KEY is available and allowed
+    use_gemini = (AI_PROVIDER in ["gemini", "auto"]) and bool(GEMINI_API_KEY and GEMINI_API_KEY.strip())
+
+    if use_gemini:
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=GEMINI_API_KEY)
+            
+            # Build conversation history
+            contents = []
+            if chat_history:
+                for h in chat_history[-6:]:
+                    role = "user" if h.get("role") == "user" else "model"
+                    contents.append(types.Content(
+                        role=role,
+                        parts=[types.Part.from_text(text=h.get("content", ""))]
+                    ))
+            contents.append(types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=message)]
+            ))
+
+            config = types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.7,
+                max_output_tokens=1500
+            )
+
+            # Try configured model, and auto-try backup models if temporary 503 high demand occurs
+            candidate_models = [GEMINI_MODEL]
+            for backup in ["gemini-3.5-flash", "gemini-3.6-flash"]:
+                if backup not in candidate_models:
+                    candidate_models.append(backup)
+
+            for try_model in candidate_models:
+                try:
+                    response = client.models.generate_content(
+                        model=try_model,
+                        contents=contents,
+                        config=config
+                    )
+                    if response and response.text:
+                        reply_text = response.text
+                        engine_used = f"gemini ({try_model})"
+                        break
+                except Exception as model_err:
+                    logger.warning(f"Gemini model {try_model} error: {model_err}")
+                    continue
+        except Exception as e:
+            logger.warning(f"Google Gemini client error ({e}). Checking fallback options.")
+
+    # 2. Try OpenAI if Gemini was not used or failed and OpenAI is available
+    if not reply_text and (AI_PROVIDER in ["openai", "auto"]) and bool(OPENAI_API_KEY and OPENAI_API_KEY.strip()):
         try:
             from openai import AsyncOpenAI
             client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -138,12 +192,14 @@ async def generate_ai_response(
                 max_tokens=1200
             )
             reply_text = response.choices[0].message.content or ""
-            used_openai = True
+            engine_used = f"openai ({OPENAI_MODEL})"
         except Exception as e:
             logger.warning(f"OpenAI API call failed ({e}). Using intelligent fallback engine.")
 
+    # 3. Fallback to smart structured synthesis
     if not reply_text:
         reply_text = generate_smart_fallback_reply(message, matched_topic, summary, papers)
+        engine_used = "smart_fallback_engine"
 
     # Next suggested questions
     suggested = [
@@ -155,7 +211,7 @@ async def generate_ai_response(
     return {
         "reply": reply_text,
         "topic": matched_topic,
-        "used_openai": used_openai,
+        "engine_used": engine_used,
         "suggested_topics": suggested,
         "related_papers": papers[:3]
     }

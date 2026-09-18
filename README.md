@@ -58,7 +58,7 @@
 | **Backend** | **FastAPI**, Uvicorn | 고성능 비동기 Python 웹 프레임워크 및 라우팅 |
 | **Validation** | **Pydantic v2** | 엄격한 타입 검증 및 직렬화/역직렬화 스키마 |
 | **Database** | **Firebase Firestore** | NoSQL 클라우드 DB (`data`, `conversations`, `papers` 컬렉션) |
-| **AI Engine** | **OpenAI API** (GPT-4o-mini) | 컨텍스트 주입 기반 자연어 생성 및 분석 비서 |
+| **AI Engine** | **Google Gemini API** (또는 OpenAI) | 컨텍스트 주입 기반 자연어 생성 및 분석 비서 (`gemini-1.5-flash`) |
 | **Frontend** | **Vanilla HTML5, CSS3, ES6+** | 프레임워크 없는 순수 웹 표준, 글래스모피즘, 다크/라이트 모드 |
 | **Visualization** | **Chart.js v4** | 연도별 논문 수 및 연구 지표 시계열 인터랙티브 차트 |
 | **Deployment** | **Render** (Backend), **Vercel** (Frontend) | 클라우드 서비스 자동 빌드 및 배포 구성 |
@@ -123,8 +123,11 @@ python test_backend.py
 
 | 환경 변수명 | 필수 여부 | 기본값 | 설명 |
 | :--- | :---: | :---: | :--- |
-| `OPENAI_API_KEY` | 선택 | `""` (미설정 시 스마트 템플릿 모드) | OpenAI API 인증 키 |
-| `OPENAI_MODEL` | 선택 | `gpt-4o-mini` | 사용할 LLM 모델 식별자 |
+| `AI_PROVIDER` | 선택 | `gemini` | 사용할 AI 엔진 (`gemini`, `openai`, `auto`) |
+| `GEMINI_API_KEY` | 선택 | `""` (미설정 시 스마트 템플릿 모드) | Google AI Studio에서 발급받은 Gemini API 키 |
+| `GEMINI_MODEL` | 선택 | `gemini-1.5-flash` | 사용할 Gemini 모델 (`gemini-1.5-flash`, `gemini-2.0-flash` 등) |
+| `OPENAI_API_KEY` | 선택 | `""` | (선택 사항) OpenAI API 인증 키 |
+| `OPENAI_MODEL` | 선택 | `gpt-4o-mini` | (선택 사항) OpenAI LLM 모델 식별자 |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | 선택 | `""` | 로컬 Firebase 서비스 계정 키 JSON 파일 경로 |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | 선택 | `""` | 클라우드 배포 시 서비스 계정 JSON 문자열 |
 | `DATA_STORE_MODE` | 선택 | `auto` | 저장소 모드 (`auto`, `firestore`, `local`) |

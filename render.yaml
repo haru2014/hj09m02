@@ -10,10 +10,14 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.8
+      - key: AI_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.6-flash
       - key: OPENAI_API_KEY
         sync: false
-      - key: OPENAI_MODEL
-        value: gpt-4o-mini
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
       - key: ALLOWED_ORIGINS

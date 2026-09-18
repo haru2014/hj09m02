@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .config import ALLOWED_ORIGINS, OPENAI_MODEL, OPENAI_API_KEY
+from .config import ALLOWED_ORIGINS, GEMINI_API_KEY, GEMINI_MODEL, OPENAI_MODEL, OPENAI_API_KEY, AI_PROVIDER
 from .services.firestore_service import seed_firestore_if_empty, is_firestore_connected
 from .api.data import router as data_router
 from .api.chat import router as chat_router
@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Pet Research Navigator API",
-    description="반려동물 연구논문 및 시계열 연구동향 AI 비서 백엔드 서비스 (FastAPI + Firestore + OpenAI Context Injection)",
+    description="반려동물 연구논문 및 시계열 연구동향 AI 비서 백엔드 서비스 (FastAPI + Firestore + Gemini/OpenAI Context Injection)",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -53,11 +53,20 @@ def health_check():
     """
     Render 무료 티어의 슬립(콜드스타트) 완화 및 서버 상태 확인용 헬스체크 엔드포인트.
     """
+    active_engine = "smart_fallback_engine"
+    active_model = "template"
+    if (AI_PROVIDER in ["gemini", "auto"]) and (GEMINI_API_KEY and GEMINI_API_KEY.strip()):
+        active_engine = "gemini"
+        active_model = GEMINI_MODEL
+    elif (AI_PROVIDER in ["openai", "auto"]) and (OPENAI_API_KEY and OPENAI_API_KEY.strip()):
+        active_engine = "openai"
+        active_model = OPENAI_MODEL
+
     return {
         "status": "online",
         "database": "firestore" if is_firestore_connected() else "local_store",
-        "ai_engine": "openai" if (OPENAI_API_KEY and OPENAI_API_KEY.strip()) else "smart_fallback_engine",
-        "model": OPENAI_MODEL,
+        "ai_engine": active_engine,
+        "model": active_model,
         "cold_start_tip": "Render 무료 인스턴스 슬립 해제 완료 (정상 응답 중)"
     }
 

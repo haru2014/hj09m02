@@ -14,7 +14,14 @@ if dotenv_path.exists():
 else:
     load_dotenv()
 
-# App settings
+# AI Provider settings (auto, gemini, openai)
+AI_PROVIDER = os.getenv("AI_PROVIDER", "auto").lower()
+
+# Google Gemini settings (Default recommended)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+
+# OpenAI settings
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 

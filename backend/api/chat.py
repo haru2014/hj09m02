@@ -60,13 +60,17 @@ async def chat_endpoint(payload: ChatRequest):
         chat_history=chat_history
     )
 
-    user_msg = ChatMessage(role="user", content=payload.message, timestamp=now_iso)
-    ai_msg = ChatMessage(role="assistant", content=ai_result["reply"], timestamp=datetime.utcnow().isoformat())
+    clean_user_content = payload.message.encode("utf-8", "replace").decode("utf-8")
+    clean_ai_content = ai_result["reply"].encode("utf-8", "replace").decode("utf-8")
+
+    user_msg = ChatMessage(role="user", content=clean_user_content, timestamp=now_iso)
+    ai_msg = ChatMessage(role="assistant", content=clean_ai_content, timestamp=datetime.utcnow().isoformat())
 
     # 5. Save conversation (Auto-save)
     if not conv_id or not existing_conv:
         conv_id = f"conv_{uuid.uuid4().hex[:8]}"
-        title = payload.message[:25] + ("..." if len(payload.message) > 25 else "")
+        title_raw = clean_user_content[:25] + ("..." if len(clean_user_content) > 25 else "")
+        title = title_raw.encode("utf-8", "replace").decode("utf-8")
         new_conv = {
             "id": conv_id,
             "title": title,
@@ -86,6 +90,7 @@ async def chat_endpoint(payload: ChatRequest):
         conversation_id=conv_id,
         reply=ai_result["reply"],
         summary_used=summary,
+        engine_used=ai_result.get("engine_used", "gemini"),
         suggested_topics=ai_result["suggested_topics"],
         related_papers=ai_result["related_papers"]
     )

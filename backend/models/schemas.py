@@ -63,6 +63,7 @@ class ChatResponse(BaseModel):
     conversation_id: str
     reply: str
     summary_used: DataSummaryResponse
+    engine_used: Optional[str] = None
     suggested_topics: List[str] = Field(default_factory=list)
     related_papers: List[Dict[str, Any]] = Field(default_factory=list)
 

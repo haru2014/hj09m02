@@ -400,7 +400,7 @@ function showLoadingIndicator() {
           <span class="loading-dot"></span>
           <span class="loading-dot"></span>
           <span class="loading-dot"></span>
-          <span style="font-size:0.75rem; color:var(--text-muted); margin-left:0.5rem;">데이터 요약 주입 및 GPT 분석 중...</span>
+          <span style="font-size:0.75rem; color:var(--text-muted); margin-left:0.5rem;">데이터 요약 주입 및 Gemini 분석 중...</span>
         </div>
       </div>
     </div>
@@ -439,7 +439,8 @@ async function handleSendMessage(text) {
     state.currentConvId = res.conversation_id;
 
     // Append AI response
-    appendMessage("assistant", res.reply, `${state.currentTopic} 요약 반영`);
+    const engineLabel = res.engine_used ? `Gemini (${res.engine_used})` : "Gemini AI";
+    appendMessage("assistant", res.reply, `${state.currentTopic} 분석 · ${engineLabel}`);
 
     // Update suggestions if available
     if (res.suggested_topics && res.suggested_topics.length > 0) {

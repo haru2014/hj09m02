@@ -172,21 +172,32 @@ def delete_data_item(item_id: str) -> bool:
 # Conversations Operations
 # ========================================================
 
+def _sanitize_obj(obj: Any) -> Any:
+    if isinstance(obj, str):
+        return obj.encode("utf-8", "replace").decode("utf-8")
+    elif isinstance(obj, list):
+        return [_sanitize_obj(x) for x in obj]
+    elif isinstance(obj, dict):
+        return {k: _sanitize_obj(v) for k, v in obj.items()}
+    return obj
+
 def get_all_conversations() -> List[Dict[str, Any]]:
     if is_firestore_connected():
         try:
-            docs = _firestore_db.collection("conversations").order_by("updated_at", direction="DESCENDING").stream()
+            col = _firestore_db.collection("conversations")
+            docs = col.stream()
             convs = []
             for doc in docs:
                 d = doc.to_dict()
                 d["id"] = doc.id
                 convs.append(d)
-            return convs
+            return _sanitize_obj(convs)
         except Exception as e:
             logger.error(f"Firestore get_all_conversations error: {e}")
 
     convs = list(_local_store.conversations.values())
-    return sorted(convs, key=lambda x: str(x.get("updated_at", "")), reverse=True)
+    sorted_convs = sorted(convs, key=lambda x: str(x.get("updated_at", "")), reverse=True)
+    return _sanitize_obj(sorted_convs)
 
 def get_conversation(conv_id: str) -> Optional[Dict[str, Any]]:
     if is_firestore_connected():
@@ -195,14 +206,16 @@ def get_conversation(conv_id: str) -> Optional[Dict[str, Any]]:
             if doc.exists:
                 d = doc.to_dict()
                 d["id"] = doc.id
-                return d
+                return _sanitize_obj(d)
             return None
         except Exception as e:
             logger.error(f"Firestore get_conversation error: {e}")
 
-    return _local_store.conversations.get(conv_id)
+    conv = _local_store.conversations.get(conv_id)
+    return _sanitize_obj(conv) if conv else None
 
 def save_conversation(conv: Dict[str, Any]) -> Dict[str, Any]:
+    conv = _sanitize_obj(conv)
     if "id" not in conv or not conv["id"]:
         import uuid
         conv["id"] = f"conv_{uuid.uuid4().hex[:8]}"

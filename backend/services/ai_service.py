@@ -21,14 +21,15 @@ SYSTEM_PROMPT_TEMPLATE = """당신은 반려동물 연구논문 및 연구동향
 {papers_context}
 
 [답변 작성 원칙]
-1. 위 데이터 요약과 논문 정보를 정확히 반영하여 맞춤형으로 설명하세요.
-2. 반드시 아래의 5단계 구조(H3 마크다운 헤더)를 준수하여 체계적으로 답변하세요:
+1. 사용자가 "요약해줘" 또는 연구 관련 질문을 하면, 위 시계열 데이터 요약(기간, 레코드 수, 주요 지표, 트렌드)과 대표 논문들을 종합 분석하여 친절하고 명확하게 요약해 주세요.
+2. 반드시 아래의 5단계 구조(H3 마크다운 헤더 `###`)를 모두 빠짐없이 포함하여 가독성 높은 마크다운으로 체계적으로 답변하세요:
    ### 1. 연구현황
    ### 2. 주요 연구주제
-   ### 3. 연구방법 및 기술 변화 (시계열 변화)
+   ### 3. 연구방법 및 기술 변화 (시계열 흐름)
    ### 4. 대표 논문 분석 (표본수, 연구방법, 주요 결과 명시)
    ### 5. 최근 연구 방향 및 향후 시사점
-3. 제공된 데이터 외의 정보를 사실인 것처럼 과장하지 말고, 전문적이면서도 알기 쉽게 설명하세요.
+3. 각 항목별로 핵심 요점은 불릿 포인트(`-`)와 볼드체(`**`)를 적극 활용하여 한눈에 파악하기 쉽게 요약하세요.
+4. 제공된 데이터 외의 정보를 사실인 것처럼 꾸며내지 말고, 신뢰할 수 있는 전문적인 어조로 설명하세요.
 """
 
 def format_papers_context(papers: List[Dict[str, Any]]) -> str:
@@ -147,7 +148,7 @@ async def generate_ai_response(
             config = types.GenerateContentConfig(
                 system_instruction=system_prompt,
                 temperature=0.7,
-                max_output_tokens=1500
+                max_output_tokens=4096
             )
 
             # Try configured model, and auto-try backup models if temporary 503 high demand occurs
@@ -164,7 +165,7 @@ async def generate_ai_response(
                         config=config
                     )
                     if response and response.text:
-                        reply_text = response.text
+                        reply_text = response.text.encode("utf-8", "replace").decode("utf-8")
                         engine_used = f"gemini ({try_model})"
                         break
                 except Exception as model_err:

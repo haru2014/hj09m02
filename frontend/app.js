@@ -30,6 +30,12 @@ function getDefaultApiBaseUrl() {
       localStorage.removeItem("pet_nav_api_base");
       return PROD_API_URL;
     }
+    // Purge outdated other project URL (samsung-stock) if previously stored
+    if (trimmed.includes("samsung-stock")) {
+      console.warn("다른 프로젝트 URL(samsung-stock)이 발견되어 현재 프로젝트 Render 정규 주소로 자동 전환합니다.");
+      localStorage.removeItem("pet_nav_api_base");
+      return PROD_API_URL;
+    }
     return trimmed;
   }
 
@@ -191,7 +197,8 @@ const el = {
   modalPaperTitle: document.getElementById("modalPaperTitle"),
   modalPaperBody: document.getElementById("modalPaperBody"),
 
-  // Server Modal
+  // Swagger & Server Modal
+  swaggerDocsLink: document.getElementById("swaggerDocsLink"),
   btnServerConfig: document.getElementById("btnServerConfig"),
   serverModalBackdrop: document.getElementById("serverModalBackdrop"),
   btnCloseServerModal: document.getElementById("btnCloseServerModal"),
@@ -254,6 +261,19 @@ function updateViewModeUI() {
     if (el.viewModeIcon) el.viewModeIcon.textContent = "📱";
     if (el.viewModeLabel) el.viewModeLabel.textContent = "모바일 뷰";
     if (el.btnToggleViewMode) el.btnToggleViewMode.title = "모바일 화면 모드로 전환";
+  }
+}
+
+function updateSwaggerDocsUrl() {
+  if (el.swaggerDocsLink) {
+    const base = state.apiBaseUrl ? state.apiBaseUrl.replace(/\/+$/, "") : "";
+    if (base) {
+      el.swaggerDocsLink.href = `${base}/docs`;
+    } else if (window.location.protocol === "https:" && !state.apiBaseUrl) {
+      el.swaggerDocsLink.href = `${PROD_API_URL}/docs`;
+    } else {
+      el.swaggerDocsLink.href = "/docs";
+    }
   }
 }
 
@@ -1184,6 +1204,11 @@ function setupEventListeners() {
       showToast("⚠️ HTTPS 환경에서는 http:// 주소가 보안상 차단됩니다. https:// 주소를 사용해주세요.", "error");
       return;
     }
+    if (newUrl.includes("samsung-stock")) {
+      showToast("⚠️ 다른 프로젝트(삼성 주식)의 주소입니다. 현재 프로젝트 주소(hj09m02-api)로 자동 복원합니다.", "warning");
+      newUrl = PROD_API_URL;
+      el.serverBaseUrlInput.value = PROD_API_URL;
+    }
     state.apiBaseUrl = newUrl;
     if (newUrl) {
       localStorage.setItem("pet_nav_api_base", newUrl);
@@ -1191,6 +1216,7 @@ function setupEventListeners() {
       localStorage.removeItem("pet_nav_api_base");
     }
     el.serverModalBackdrop.classList.remove("show");
+    updateSwaggerDocsUrl();
     checkApiHealth();
     loadTopicTrends(state.currentTopic);
     showToast("API 서버 주소가 업데이트되었습니다.", "success");
@@ -1200,6 +1226,7 @@ function setupEventListeners() {
     state.apiBaseUrl = getDefaultApiBaseUrl();
     el.serverBaseUrlInput.value = state.apiBaseUrl;
     el.serverModalBackdrop.classList.remove("show");
+    updateSwaggerDocsUrl();
     checkApiHealth();
     loadTopicTrends(state.currentTopic);
     showToast("기본 추천 주소로 복원되었습니다.", "info");
@@ -1270,6 +1297,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   applyTheme(state.theme);
   applyViewMode(state.viewMode);
   setupEventListeners();
+  updateSwaggerDocsUrl();
 
   // Initial connection check
   await checkApiHealth();

@@ -86,11 +86,12 @@ def health_check():
         "cold_start_tip": "Render 무료 인스턴스 슬립 해제 완료 (정상 응답 중)"
     }
 
-# Mount frontend for local unified preview if frontend directory exists
+# Mount frontend static files for local & backend direct serving (Issue 4)
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 if FRONTEND_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend_root")
 

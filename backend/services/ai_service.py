@@ -88,7 +88,13 @@ def generate_smart_fallback_reply(
 ### 5. 최근 연구 방향 및 향후 시사점
 {summary.recent_trend_desc} 병원 방문 시점의 일회성 진단을 넘어, 보호자의 가정 내 스마트 IoT 디바이스와 AI 알고리즘을 연계한 **조기 이상 감지(Early Detection)** 및 **맞춤형 지속 케어**가 핵심 연구 트렌드로 정착되고 있습니다.
 """
-    return reply
+    offline_notice = (
+        "> ⚠️ **[안내] 현재 실시간 온라인 AI 분석을 진행하지 못하는 상태입니다.**\n"
+        "> **사유**: 외부 온라인 생성형 AI 엔진(Gemini/OpenAI)과의 온라인 통신이 불가능합니다. (API 키 미설정 또는 네트워크 오프라인 상태)\n"
+        "> 실시간 LLM 분석 대신 로컬에 안전하게 보존된 16개년 시계열 통계 데이터와 150편 논문 아카이브 기반의 구조화 분석 리포트를 제공합니다.\n\n"
+        "---\n\n"
+    )
+    return offline_notice + reply
 
 async def generate_ai_response(
     message: str,

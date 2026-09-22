@@ -622,6 +622,53 @@ body {
   color: var(--text-primary);
 }
 
+/* Chat Offline Notice Banner */
+.chat-offline-banner {
+  background: rgba(239, 68, 68, 0.14);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  animation: bannerSlideDown 0.3s ease;
+}
+
+@keyframes bannerSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-offline-banner .offline-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chat-offline-banner .offline-icon {
+  font-size: 1rem;
+}
+
+.chat-offline-banner .btn-check-server {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #ffffff;
+  border-radius: var(--radius-sm, 6px);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.chat-offline-banner .btn-check-server:hover {
+  background: rgba(239, 68, 68, 0.45);
+  border-color: rgba(239, 68, 68, 0.8);
+}
+
 /* Chat Messages Stream */
 .chat-messages {
   flex: 1;

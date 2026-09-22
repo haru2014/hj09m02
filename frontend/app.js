@@ -134,6 +134,8 @@ const el = {
   chatInputText: document.getElementById("chatInputText"),
   btnClearChat: document.getElementById("btnClearChat"),
   chatContextSubtitle: document.getElementById("chatContextSubtitle"),
+  chatOfflineBanner: document.getElementById("chatOfflineBanner"),
+  btnBannerCheckServer: document.getElementById("btnBannerCheckServer"),
   welcomeTopic: document.getElementById("welcomeTopic"),
   promptRecentTrend: document.getElementById("promptRecentTrend"),
   promptMethodShift: document.getElementById("promptMethodShift"),
@@ -259,6 +261,10 @@ async function checkApiHealth(retryCount = 0) {
     const health = await apiRequest("/api/health");
     el.apiStatusBadge.className = "status-indicator online";
     el.apiStatusLabel.textContent = `Online (${health.database})`;
+    if (el.chatOfflineBanner) el.chatOfflineBanner.style.display = "none";
+    if (el.chatContextSubtitle) {
+      el.chatContextSubtitle.innerHTML = '<span class="context-pulse"></span> 데이터 요약(Context) 자동 주입 중';
+    }
     return true;
   } catch (err) {
     // Free tier Render backend may take 30~50s to wake from sleep
@@ -270,6 +276,10 @@ async function checkApiHealth(retryCount = 0) {
     }
     el.apiStatusBadge.className = "status-indicator offline";
     el.apiStatusLabel.textContent = "Offline (연결 실패)";
+    if (el.chatOfflineBanner) el.chatOfflineBanner.style.display = "flex";
+    if (el.chatContextSubtitle) {
+      el.chatContextSubtitle.innerHTML = '<span style="color:var(--accent-rose,#ef4444); font-weight:600;">● 오프라인 (온라인 AI 분석 불가)</span>';
+    }
     return false;
   }
 }
@@ -480,6 +490,26 @@ async function handleSendMessage(text) {
   // Append user message
   appendMessage("user", cleanText);
   el.chatInputText.value = "";
+
+  // 1. Check if the server is currently Offline
+  const isCurrentlyOffline = el.apiStatusBadge.classList.contains("offline") || !navigator.onLine;
+  if (isCurrentlyOffline) {
+    const offlineNotice = `### ⚠️ 현재 분석을 진행하지 못하는 상태입니다.
+
+**[분석 불가 사유]**
+* **오프라인 상태**: 현재 백엔드 API 서버와의 온라인 연결이 끊어져 있는 **오프라인(Offline)** 상태입니다.
+* **실시간 AI 분석 불가**: 온라인 서버 및 AI 분석 엔진(Gemini)과 연결되어 있지 않아 실시간 연구동향 분석이 불가능합니다.
+
+**[원인 및 조치 안내]**
+1. **서버 주소 설정 확인**: 우측 상단의 **⚙️ API 서버 주소 설정**을 열어 올바른 주소(Render 배포 서버: \`https://hj09m02-api.onrender.com\`)가 지정되어 있는지 확인해 주세요.
+2. **콜드 스타트(Cold Start)**: Render 무료 인스턴스가 슬립 모드일 수 있습니다. 약 30~50초 후 자동으로 기상하니 잠시 후 다시 시도해 주세요.
+3. **네트워크 확인**: 인터넷 연결 상태를 확인해 주세요.`;
+
+    appendMessage("assistant", offlineNotice, "오프라인 · AI 분석 불가");
+    showToast("현재 오프라인 상태이므로 온라인 AI 분석이 불가능합니다.", "error");
+    return;
+  }
+
   showLoadingIndicator();
 
   try {
@@ -498,7 +528,14 @@ async function handleSendMessage(text) {
     state.currentConvId = res.conversation_id;
 
     // Append AI response
-    const engineLabel = res.engine_used ? `Gemini (${res.engine_used})` : "Gemini AI";
+    let engineLabel = "Gemini AI";
+    if (res.engine_used === "smart_fallback_engine") {
+      engineLabel = "오프라인 대체 · 구조화 리포트";
+      showToast("온라인 AI 미연결: 시계열 데이터 기반 대체 리포트가 생성되었습니다.", "warning");
+    } else if (res.engine_used) {
+      engineLabel = `Gemini (${res.engine_used})`;
+    }
+
     appendMessage("assistant", res.reply, `${state.currentTopic} 분석 · ${engineLabel}`);
 
     // Update suggestions if available
@@ -507,8 +544,28 @@ async function handleSendMessage(text) {
     }
   } catch (err) {
     hideLoadingIndicator();
-    appendMessage("assistant", `⚠️ 오류가 발생했습니다: ${err.message}\n백엔드 서버 상태를 확인해 주세요.`, "에러");
-    showToast("AI 답변 생성 실패", "error");
+
+    // Mark status badge as offline
+    el.apiStatusBadge.className = "status-indicator offline";
+    el.apiStatusLabel.textContent = "Offline (연결 실패)";
+    if (el.chatOfflineBanner) el.chatOfflineBanner.style.display = "flex";
+    if (el.chatContextSubtitle) {
+      el.chatContextSubtitle.innerHTML = '<span style="color:var(--accent-rose,#ef4444); font-weight:600;">● 오프라인 (온라인 AI 분석 불가)</span>';
+    }
+
+    const errorNotice = `### ⚠️ 현재 분석을 진행하지 못하는 상태입니다.
+
+**[분석 불가 사유]**
+* **서버 연결 실패 (오프라인)**: API 서버로부터 정상 응답을 수신하지 못했습니다. (\`${err.message}\`)
+* **온라인 AI 분석 불가**: 백엔드 서버가 오프라인 상태이거나 네트워크 연결이 끊어져 실시간 AI 연구동향 분석이 불가능합니다.
+
+**[조치 안내]**
+1. 우측 상단의 **⚙️ API 서버 주소 설정**에서 배포 서버 주소(\`https://hj09m02-api.onrender.com\`)가 올바른지 확인해 주세요.
+2. Render 무료 서버 슬립 모드일 수 있으니 약 30초 후 다시 시도해 주세요.
+3. 인터넷 네트워크 연결 상태를 확인해 주세요.`;
+
+    appendMessage("assistant", errorNotice, "오프라인 · AI 분석 불가");
+    showToast("현재 오프라인 상태이므로 온라인 AI 분석이 불가능합니다.", "error");
   }
 }
 
@@ -1047,6 +1104,14 @@ function setupEventListeners() {
         showToast("⚠️ HTTPS 페이지에서는 로컬 http:// 주소가 브라우저 보안에 의해 차단될 수 있습니다.", "warning");
       }
       el.serverBaseUrlInput.value = "http://127.0.0.1:8000";
+    });
+  }
+
+  // Banner Check Server Button
+  if (el.btnBannerCheckServer) {
+    el.btnBannerCheckServer.addEventListener("click", () => {
+      el.serverBaseUrlInput.value = state.apiBaseUrl;
+      el.serverModalBackdrop.classList.add("show");
     });
   }
 

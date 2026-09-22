@@ -1,6 +1,6 @@
 # 🐾 Pet Research Navigator (반려동물 연구동향 AI 비서)
 
-> **데이터 기반 맞춤형 AI 비서 서비스**: 16개년 시계열 연구 데이터(112건)와 154편의 구조화된 반려동물 연구논문을 분석하고, 데이터 요약을 GPT에 실시간 컨텍스트로 주입하여 체계적인 연구동향 인사이트를 제공하는 차세대 AI 웹 애플리케이션입니다.
+> **데이터 기반 맞춤형 AI 비서 서비스**: 16개년 시계열 연구 데이터(112건)와 154편의 구조화된 반려동물 연구논문을 분석하고, 데이터 요약을 **Google Gemini 3.5 Flash**(또는 OpenAI GPT)에 실시간 컨텍스트로 주입하여 체계적인 연구동향 인사이트를 제공하는 차세대 AI 웹 애플리케이션입니다.
 
 ---
 
@@ -24,7 +24,7 @@
 ## 2. 시스템 아키텍처 및 데이터 흐름
 
 ```
-[사용자 웹 브라우저 (Vanilla HTML/CSS/JS)]
+[사용자 웹 브라우저 (Vanilla HTML/CSS/JS + Responsive PC/Mobile)]
    │
    ├── ① 연구주제 검색 / 자연어 질문 ("관절 연구동향 알려줘")
    │
@@ -40,7 +40,7 @@
    │
    ├── ⑤ 시스템 프롬프트에 데이터 요약 Context 동적 주입
    │
-   ├── ⑥ OpenAI GPT-4o-mini 호출 (또는 Smart Structured Fallback Engine)
+   ├── ⑥ Google Gemini 3.5 Flash 호출 (또는 OpenAI / Smart Fallback Engine)
    │
    ├── ⑦ 생성된 답변 및 대화 세션 자동 저장 (/api/conversations)
    │
@@ -55,13 +55,13 @@
 
 | 영역 | 사용 기술 | 설명 |
 | :--- | :--- | :--- |
-| **Backend** | **FastAPI**, Uvicorn | 고성능 비동기 Python 웹 프레임워크 및 라우팅 |
+| **Backend** | **FastAPI**, Uvicorn | 고성능 비동기 Python 웹 프레임워크 및 RESTful 라우팅 |
 | **Validation** | **Pydantic v2** | 엄격한 타입 검증 및 직렬화/역직렬화 스키마 |
-| **Database** | **Firebase Firestore** | NoSQL 클라우드 DB (`data`, `conversations`, `papers` 컬렉션) |
-| **AI Engine** | **Google Gemini API** (또는 OpenAI) | 컨텍스트 주입 기반 자연어 생성 및 분석 비서 (`gemini-1.5-flash`) |
-| **Frontend** | **Vanilla HTML5, CSS3, ES6+** | 프레임워크 없는 순수 웹 표준, 글래스모피즘, 다크/라이트 모드 |
+| **Database** | **Firebase Firestore** / Local Store | NoSQL 클라우드 DB 및 로컬 저장소 듀얼 모드 (`data`, `conversations`, `papers` 컬렉션) |
+| **AI Engine** | **Google Gemini API** (또는 OpenAI) | 컨텍스트 주입 기반 자연어 분석 비서 (기본: `gemini-3.5-flash`, 페일오버: `gemini-3.6-flash`) |
+| **Frontend** | **Vanilla HTML5, CSS3, ES6+** | 프레임워크 없는 순수 웹 표준, 반응형 PC ↔ 모바일 뷰 전환, 글래스모피즘, 다크/라이트 모드 |
 | **Visualization** | **Chart.js v4** | 연도별 논문 수 및 연구 지표 시계열 인터랙티브 차트 |
-| **Deployment** | **Render** (Backend), **Vercel** (Frontend) | 클라우드 서비스 자동 빌드 및 배포 구성 |
+| **Deployment** | **Render** (Backend), **Vercel** (Frontend) | 클라우드 서비스 자동 빌드 및 분리 배포 구성 |
 
 ---
 
@@ -69,11 +69,11 @@
 
 - **프론트엔드 서비스 URL (Vercel)**: https://hj09m0201.vercel.app/
 - **백엔드 API 서버 URL (Render)**: https://hj09m02-api.onrender.com
-- **대화형 Swagger UI 문서**: https://hj09m02-api.onrender.com/docs
+- **대화형 Swagger UI 문서**: https://hj09m02-api.onrender.com/docs *(Vercel 프록시: https://hj09m0201.vercel.app/docs)*
 
 > [!TIP]
 > **Render 무료 티어 슬립(콜드스타트) 대응 방안**  
-> Render 무료 Web Service는 15분간 요청이 없을 경우 슬립 모드로 전환되어 첫 요청 시 약 30~50초의 지연이 발생할 수 있습니다. 본 서비스는 프론트엔드 상단에 **실시간 백엔드 연결 상태 뱃지**와 헬스체크(`/api/health`)를 연동하여 서버 기상 상태를 사용자에게 즉각 안내합니다.
+> Render 무료 Web Service는 15분간 요청이 없을 경우 슬립 모드로 전환되어 첫 요청 시 약 30~50초의 기상 지연이 발생할 수 있습니다. 본 서비스는 프론트엔드 상단에 **실시간 백엔드 연결 상태 뱃지**와 30초 카운트다운, 8초 주기 자동 복구 폴링(`/api/health`)을 탑재하여 서버가 켜지는 즉시 새로고침 없이 온라인으로 자동 전환됩니다.
 
 ---
 
@@ -81,8 +81,9 @@
 
 ### 1) 저장소 클론 및 가상환경 설정
 ```bash
-# 저장소 복제
-git clone git@github.com:haru2014/hj09m02.git
+# 저장소 복제 (HTTPS)
+git clone https://github.com/haru2014/hj09m02.git
+# (또는 SSH: git clone git@github.com:haru2014/hj09m02.git)
 cd hj09m02
 
 # Python 가상환경 생성 (Python 3.10 이상 권장)
@@ -125,7 +126,7 @@ python test_backend.py
 | :--- | :---: | :---: | :--- |
 | `AI_PROVIDER` | 선택 | `gemini` | 사용할 AI 엔진 (`gemini`, `openai`, `auto`) |
 | `GEMINI_API_KEY` | 선택 | `""` (미설정 시 스마트 템플릿 모드) | Google AI Studio에서 발급받은 Gemini API 키 |
-| `GEMINI_MODEL` | 선택 | `gemini-1.5-flash` | 사용할 Gemini 모델 (`gemini-1.5-flash`, `gemini-2.0-flash` 등) |
+| `GEMINI_MODEL` | 선택 | `gemini-3.5-flash` | 사용할 Gemini 모델 (`gemini-3.5-flash`, `gemini-3.6-flash` 권장) |
 | `OPENAI_API_KEY` | 선택 | `""` | (선택 사항) OpenAI API 인증 키 |
 | `OPENAI_MODEL` | 선택 | `gpt-4o-mini` | (선택 사항) OpenAI LLM 모델 식별자 |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | 선택 | `""` | 로컬 Firebase 서비스 계정 키 JSON 파일 경로 |

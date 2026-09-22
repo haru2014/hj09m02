@@ -71,7 +71,8 @@ def run_tests():
     assert chat_res.status_code == 200, f"Chat failed: {chat_res.text}"
     chat_data = chat_res.json()
     print(f"대화 세션 ID: {chat_data['conversation_id']}")
-    print(f"AI 응답 미리보기 (앞 200자):\n{chat_data['reply'][:200]}...")
+    safe_reply = chat_data['reply'][:200].encode('ascii', errors='replace').decode('ascii')
+    print(f"AI 응답 미리보기 (앞 200자):\n{safe_reply}...")
     assert len(chat_data["reply"]) > 50
     assert "summary_used" in chat_data
     conv_id = chat_data["conversation_id"]

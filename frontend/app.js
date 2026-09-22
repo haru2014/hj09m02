@@ -6,8 +6,53 @@
 // ========================================================
 // 1. Application State & Configuration
 // ========================================================
+// Production Render backend API URL
+const PROD_API_URL = "https://hj09m02-api.onrender.com";
+
+/**
+ * Automatically determine the most suitable API Base URL based on the runtime environment:
+ * 1. On HTTPS (e.g. Vercel deployment): Use PROD_API_URL (Render HTTPS) or proxy to prevent Mixed Content blocking.
+ * 2. In local dev (port 8000): Use relative URL "" (unified backend).
+ * 3. In local Live Server (port 5500, 3000, etc.): Use "http://127.0.0.1:8000".
+ * 4. Stored setting: Insecure http:// saved on HTTPS pages is automatically purged.
+ */
+function getDefaultApiBaseUrl() {
+  const isHttps = window.location.protocol === "https:";
+  const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+  // Check user saved preference in localStorage
+  const saved = localStorage.getItem("pet_nav_api_base");
+  if (saved !== null && saved !== undefined) {
+    const trimmed = saved.trim().replace(/\/+$/, "");
+    // Crucial Mixed Content Guard: Insecure http:// on HTTPS pages will be blocked by browsers
+    if (isHttps && trimmed.startsWith("http://")) {
+      console.warn("Mixed Content 방지: HTTPS 환경에서 비암호화 HTTP 설정(127.0.0.1)이 발견되어 Render 배포 서버 주소로 자동 전환합니다.");
+      localStorage.removeItem("pet_nav_api_base");
+      return PROD_API_URL;
+    }
+    return trimmed;
+  }
+
+  // 1. Direct local FastAPI unified serving
+  if (window.location.port === "8000") {
+    return "";
+  }
+
+  // 2. HTTPS production environment (Vercel / custom domain)
+  if (isHttps) {
+    return PROD_API_URL;
+  }
+
+  // 3. Local standalone frontend runner (e.g., Live Server :5500)
+  if (isLocalhost) {
+    return "http://127.0.0.1:8000";
+  }
+
+  return PROD_API_URL;
+}
+
 const state = {
-  apiBaseUrl: localStorage.getItem("pet_nav_api_base") || (window.location.port === "8000" ? "" : "http://127.0.0.1:8000"),
+  apiBaseUrl: getDefaultApiBaseUrl(),
   currentTopic: "관절",
   currentConvId: null,
   activeTab: "tab-chat",
@@ -143,6 +188,9 @@ const el = {
   serverBaseUrlInput: document.getElementById("serverBaseUrlInput"),
   btnSaveServerUrl: document.getElementById("btnSaveServerUrl"),
   btnResetServerUrl: document.getElementById("btnResetServerUrl"),
+  btnPresetRender: document.getElementById("btnPresetRender"),
+  btnPresetLocal: document.getElementById("btnPresetLocal"),
+  btnPresetProxy: document.getElementById("btnPresetProxy"),
 
   // Toast
   toastContainer: document.getElementById("toastContainer")
@@ -202,13 +250,24 @@ async function apiRequest(endpoint, options = {}) {
   }
 }
 
-async function checkApiHealth() {
+async function checkApiHealth(retryCount = 0) {
   try {
+    if (retryCount > 0) {
+      el.apiStatusBadge.className = "status-indicator offline";
+      el.apiStatusLabel.textContent = `서버 기상 중 (Cold Start... ${retryCount}/3)`;
+    }
     const health = await apiRequest("/api/health");
     el.apiStatusBadge.className = "status-indicator online";
     el.apiStatusLabel.textContent = `Online (${health.database})`;
     return true;
   } catch (err) {
+    // Free tier Render backend may take 30~50s to wake from sleep
+    if (retryCount < 2 && (state.apiBaseUrl.includes("onrender.com") || state.apiBaseUrl === "")) {
+      el.apiStatusBadge.className = "status-indicator offline";
+      el.apiStatusLabel.textContent = "서버 기상 중 (Cold Start)...";
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      return await checkApiHealth(retryCount + 1);
+    }
     el.apiStatusBadge.className = "status-indicator offline";
     el.apiStatusLabel.textContent = "Offline (연결 실패)";
     return false;
@@ -945,9 +1004,17 @@ function setupEventListeners() {
   });
   el.btnCloseServerModal.addEventListener("click", () => el.serverModalBackdrop.classList.remove("show"));
   el.btnSaveServerUrl.addEventListener("click", () => {
-    const newUrl = el.serverBaseUrlInput.value.trim().replace(/\/+$/, "");
+    let newUrl = el.serverBaseUrlInput.value.trim().replace(/\/+$/, "");
+    if (window.location.protocol === "https:" && newUrl.startsWith("http://")) {
+      showToast("⚠️ HTTPS 환경에서는 http:// 주소가 보안상 차단됩니다. https:// 주소를 사용해주세요.", "error");
+      return;
+    }
     state.apiBaseUrl = newUrl;
-    localStorage.setItem("pet_nav_api_base", newUrl);
+    if (newUrl) {
+      localStorage.setItem("pet_nav_api_base", newUrl);
+    } else {
+      localStorage.removeItem("pet_nav_api_base");
+    }
     el.serverModalBackdrop.classList.remove("show");
     checkApiHealth();
     loadTopicTrends(state.currentTopic);
@@ -955,13 +1022,33 @@ function setupEventListeners() {
   });
   el.btnResetServerUrl.addEventListener("click", () => {
     localStorage.removeItem("pet_nav_api_base");
-    state.apiBaseUrl = window.location.port === "8000" ? "" : "http://127.0.0.1:8000";
+    state.apiBaseUrl = getDefaultApiBaseUrl();
     el.serverBaseUrlInput.value = state.apiBaseUrl;
     el.serverModalBackdrop.classList.remove("show");
     checkApiHealth();
     loadTopicTrends(state.currentTopic);
-    showToast("기본 로컬 주소로 초기화되었습니다.", "info");
+    showToast("기본 추천 주소로 복원되었습니다.", "info");
   });
+
+  // Preset quick buttons
+  if (el.btnPresetRender) {
+    el.btnPresetRender.addEventListener("click", () => {
+      el.serverBaseUrlInput.value = PROD_API_URL;
+    });
+  }
+  if (el.btnPresetProxy) {
+    el.btnPresetProxy.addEventListener("click", () => {
+      el.serverBaseUrlInput.value = "";
+    });
+  }
+  if (el.btnPresetLocal) {
+    el.btnPresetLocal.addEventListener("click", () => {
+      if (window.location.protocol === "https:") {
+        showToast("⚠️ HTTPS 페이지에서는 로컬 http:// 주소가 브라우저 보안에 의해 차단될 수 있습니다.", "warning");
+      }
+      el.serverBaseUrlInput.value = "http://127.0.0.1:8000";
+    });
+  }
 
   // Close modals on outside click
   window.addEventListener("click", e => {

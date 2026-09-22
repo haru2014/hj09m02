@@ -3,6 +3,20 @@
   "name": "pet-research-navigator",
   "cleanUrls": true,
   "outputDirectory": "frontend",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://hj09m02-api.onrender.com/api/$1"
+    },
+    {
+      "source": "/docs",
+      "destination": "https://hj09m02-api.onrender.com/docs"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "https://hj09m02-api.onrender.com/openapi.json"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

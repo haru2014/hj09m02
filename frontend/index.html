@@ -502,11 +502,18 @@
         <button class="btn-close-modal" id="btnCloseServerModal">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="modal-desc">Vercel 배포 환경 또는 다른 호스트에서 실행 시 백엔드 API 주소를 직접 지정할 수 있습니다.</p>
+        <p class="modal-desc">Vercel 배포 환경(온라인) 또는 로컬 개발 환경에 맞춰 백엔드 API 주소를 간편하게 전환할 수 있습니다.</p>
+        
+        <div class="preset-btn-group" style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-outline" id="btnPresetRender" style="font-size: 12px; padding: 6px 12px;">☁️ Render 클라우드 (권장)</button>
+          <button type="button" class="btn btn-outline" id="btnPresetProxy" style="font-size: 12px; padding: 6px 12px;">🌐 Vercel 프록시 (상대경로)</button>
+          <button type="button" class="btn btn-outline" id="btnPresetLocal" style="font-size: 12px; padding: 6px 12px;">💻 로컬 서버 (127.0.0.1:8000)</button>
+        </div>
+
         <div class="form-group">
           <label for="serverBaseUrlInput">API Base URL:</label>
-          <input type="url" id="serverBaseUrlInput" class="form-input" placeholder="http://127.0.0.1:8000 또는 Render 배포 URL">
-          <span class="form-hint">비워둘 경우 현재 접속 중인 오리진 또는 기본 로컬 주소(8000)가 사용됩니다.</span>
+          <input type="url" id="serverBaseUrlInput" class="form-input" placeholder="https://hj09m02-api.onrender.com">
+          <span class="form-hint" id="serverModalHint">💡 Vercel(HTTPS)에서는 브라우저 보안(Mixed Content 차단)으로 인해 반드시 https:// 주소를 사용해야 합니다.</span>
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" id="btnResetServerUrl">기본값 복원</button>

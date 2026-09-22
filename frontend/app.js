@@ -288,7 +288,21 @@ async function checkApiHealth(retryCount = 0) {
     }
     const health = await apiRequest("/api/health");
     el.apiStatusBadge.className = "status-indicator online";
-    el.apiStatusLabel.textContent = `Online (${health.database})`;
+    
+    // Friendly status label: Clear differentiation between Cloud (Render/Firestore) and Local Dev
+    let targetDbLabel = health.database_label;
+    if (!targetDbLabel) {
+      if (health.database === "firestore") {
+        targetDbLabel = "Firestore";
+      } else if (state.apiBaseUrl.includes("onrender.com") || window.location.hostname.includes("vercel.app")) {
+        targetDbLabel = "Render Cloud";
+      } else {
+        targetDbLabel = "로컬 개발";
+      }
+    }
+    el.apiStatusLabel.textContent = `Online (${targetDbLabel})`;
+    el.apiStatusBadge.title = `백엔드 서버: 온라인 정상 연동 중 (${targetDbLabel}) | AI 엔진: ${health.ai_engine || "Gemini"}`;
+    
     if (el.chatOfflineBanner) el.chatOfflineBanner.style.display = "none";
     if (el.chatContextSubtitle) {
       el.chatContextSubtitle.innerHTML = '<span class="context-pulse"></span> 데이터 요약(Context) 자동 주입 중';

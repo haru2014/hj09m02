@@ -62,9 +62,25 @@ def health_check():
         active_engine = "openai"
         active_model = OPENAI_MODEL
 
+    import os
+    is_cloud = bool(os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID") or os.getenv("PORT", "8000") != "8000")
+    
+    if is_firestore_connected():
+        db_name = "firestore"
+        db_label = "Firebase Firestore"
+    elif is_cloud:
+        db_name = "cloud_store"
+        db_label = "Render Cloud"
+    else:
+        db_name = "local_store"
+        db_label = "Local Dev"
+
     return {
         "status": "online",
-        "database": "firestore" if is_firestore_connected() else "local_store",
+        "database": db_name,
+        "database_label": db_label,
+        "is_cloud": is_cloud,
+        "is_firestore": is_firestore_connected(),
         "ai_engine": active_engine,
         "model": active_model,
         "cold_start_tip": "Render 무료 인스턴스 슬립 해제 완료 (정상 응답 중)"

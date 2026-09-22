@@ -199,10 +199,13 @@
               <!-- Offline Warning Notice Banner -->
               <div class="chat-offline-banner" id="chatOfflineBanner" style="display: none;">
                 <div class="offline-banner-left">
-                  <span class="offline-icon">⚠️</span>
-                  <span class="offline-text">현재 백엔드 서버가 <strong>오프라인</strong> 상태입니다. 온라인 AI 분석이 불가능합니다.</span>
+                  <span class="offline-icon" id="offlineBannerIcon">⚠️</span>
+                  <span class="offline-text" id="offlineBannerText">현재 백엔드 서버가 <strong>오프라인</strong> 상태입니다. 온라인 AI 분석이 불가능합니다.</span>
                 </div>
-                <button type="button" class="btn-check-server" id="btnBannerCheckServer">⚙️ 서버 설정</button>
+                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                  <button type="button" class="btn-check-server" id="btnBannerRetry">🔄 다시 연결</button>
+                  <button type="button" class="btn-check-server" id="btnBannerCheckServer">⚙️ 서버 설정</button>
+                </div>
               </div>
 
               <!-- Chat Message Stream -->

@@ -140,6 +140,9 @@ const el = {
   btnClearChat: document.getElementById("btnClearChat"),
   chatContextSubtitle: document.getElementById("chatContextSubtitle"),
   chatOfflineBanner: document.getElementById("chatOfflineBanner"),
+  offlineBannerIcon: document.getElementById("offlineBannerIcon"),
+  offlineBannerText: document.getElementById("offlineBannerText"),
+  btnBannerRetry: document.getElementById("btnBannerRetry"),
   btnBannerCheckServer: document.getElementById("btnBannerCheckServer"),
   welcomeTopic: document.getElementById("welcomeTopic"),
   promptRecentTrend: document.getElementById("promptRecentTrend"),
@@ -284,7 +287,12 @@ async function checkApiHealth(retryCount = 0) {
   try {
     if (retryCount > 0) {
       el.apiStatusBadge.className = "status-indicator offline";
-      el.apiStatusLabel.textContent = `서버 기상 중 (Cold Start... ${retryCount}/3)`;
+      el.apiStatusLabel.textContent = `서버 기상 중 (Cold Start... ${retryCount}/5)`;
+      if (el.offlineBannerIcon) el.offlineBannerIcon.textContent = "⏳";
+      if (el.offlineBannerText) {
+        el.offlineBannerText.innerHTML = `Render 클라우드 서버 기상 중입니다... <strong>(무료 플랜 슬립 해제 ${retryCount}/5, 약 30초 소요)</strong>`;
+      }
+      if (el.chatOfflineBanner) el.chatOfflineBanner.style.display = "flex";
     }
     const health = await apiRequest("/api/health");
     el.apiStatusBadge.className = "status-indicator online";
@@ -301,29 +309,71 @@ async function checkApiHealth(retryCount = 0) {
       }
     }
     el.apiStatusLabel.textContent = `Online (${targetDbLabel})`;
-    el.apiStatusBadge.title = `백엔드 서버: 온라인 정상 연동 중 (${targetDbLabel}) | AI 엔진: ${health.ai_engine || "Gemini"}`;
+    const aiNote = health.has_ai_key 
+      ? `실시간 AI: ${health.ai_engine} (${health.model})`
+      : `AI 엔진: ${health.ai_engine} (Render에 GEMINI_API_KEY 설정 시 실시간 활성화)`;
+    el.apiStatusBadge.title = `백엔드 서버: 온라인 정상 연동 중 (${targetDbLabel}) | ${aiNote}`;
     
     if (el.chatOfflineBanner) el.chatOfflineBanner.style.display = "none";
     if (el.chatContextSubtitle) {
       el.chatContextSubtitle.innerHTML = '<span class="context-pulse"></span> 데이터 요약(Context) 자동 주입 중';
     }
+
+    // Clear background recovery interval on success
+    if (window._healthPollingTimer) {
+      clearInterval(window._healthPollingTimer);
+      window._healthPollingTimer = null;
+    }
     return true;
   } catch (err) {
     // Free tier Render backend may take 30~50s to wake from sleep
-    if (retryCount < 2 && (state.apiBaseUrl.includes("onrender.com") || state.apiBaseUrl === "")) {
+    if (retryCount < 5 && (state.apiBaseUrl.includes("onrender.com") || state.apiBaseUrl === "")) {
       el.apiStatusBadge.className = "status-indicator offline";
-      el.apiStatusLabel.textContent = "서버 기상 중 (Cold Start)...";
-      await new Promise(resolve => setTimeout(resolve, 4000));
+      el.apiStatusLabel.textContent = `서버 기상 중 (Cold Start... ${retryCount + 1}/5)`;
+      if (el.offlineBannerIcon) el.offlineBannerIcon.textContent = "⏳";
+      if (el.offlineBannerText) {
+        el.offlineBannerText.innerHTML = `Render 클라우드 서버 기상 중입니다... <strong>(무료 플랜 슬립 해제 ${retryCount + 1}/5, 약 30초 소요)</strong>`;
+      }
+      if (el.chatOfflineBanner) el.chatOfflineBanner.style.display = "flex";
+      await new Promise(resolve => setTimeout(resolve, 5000));
       return await checkApiHealth(retryCount + 1);
     }
+
     el.apiStatusBadge.className = "status-indicator offline";
-    el.apiStatusLabel.textContent = "Offline (연결 실패)";
+    el.apiStatusLabel.textContent = "Offline (연결 대기)";
+    if (el.offlineBannerIcon) el.offlineBannerIcon.textContent = "⚠️";
+    if (el.offlineBannerText) {
+      el.offlineBannerText.innerHTML = "백엔드 서버 연결 대기 중입니다. Render 서버가 깨어나는 중이거나 주소 설정이 필요할 수 있습니다.";
+    }
     if (el.chatOfflineBanner) el.chatOfflineBanner.style.display = "flex";
     if (el.chatContextSubtitle) {
       el.chatContextSubtitle.innerHTML = '<span style="color:var(--accent-rose,#ef4444); font-weight:600;">● 오프라인 (온라인 AI 분석 불가)</span>';
     }
+
+    // Auto-poll in background every 8 seconds until live
+    startBackgroundHealthPolling();
     return false;
   }
+}
+
+function startBackgroundHealthPolling() {
+  if (window._healthPollingTimer) return;
+  window._healthPollingTimer = setInterval(async () => {
+    try {
+      const res = await apiRequest("/api/health");
+      if (res && res.status === "online") {
+        clearInterval(window._healthPollingTimer);
+        window._healthPollingTimer = null;
+        await checkApiHealth(0);
+        if (state.timeseriesData.length === 0) {
+          await loadTopicTrends(state.currentTopic);
+        }
+        showToast("Render 클라우드 서버가 성공적으로 연결되었습니다!", "success");
+      }
+    } catch (_) {
+      // Continue polling silently
+    }
+  }, 8000);
 }
 
 // ========================================================
@@ -1180,6 +1230,20 @@ function setupEventListeners() {
     el.btnBannerCheckServer.addEventListener("click", () => {
       el.serverBaseUrlInput.value = state.apiBaseUrl;
       el.serverModalBackdrop.classList.add("show");
+    });
+  }
+
+  // Banner Retry Connection Button
+  if (el.btnBannerRetry) {
+    el.btnBannerRetry.addEventListener("click", async () => {
+      showToast("서버 연결을 다시 확인 중입니다...", "info");
+      const ok = await checkApiHealth(0);
+      if (ok) {
+        showToast("클라우드 서버 연결 성공!", "success");
+        await loadTopicTrends(state.currentTopic);
+      } else {
+        showToast("서버가 아직 준비 중입니다. 잠시 후 다시 시도해주세요.", "warning");
+      }
     });
   }
 

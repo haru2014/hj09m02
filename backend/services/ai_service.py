@@ -158,15 +158,12 @@ async def generate_ai_response(
                 max_output_tokens=4096
             )
 
-            # Try configured model, and auto-try backup models sequentially if temporary errors occur
+            # Try configured model, and auto-try proven models (gemini-3.5-flash, gemini-3.6-flash)
             models_to_try = [
                 GEMINI_MODEL,
-                "gemini-3.6-flash",
-                "gemini-flash-latest",
                 "gemini-3.5-flash",
-                "gemini-2.5-flash",
-                "gemini-2.0-flash",
-                "gemini-1.5-flash"
+                "gemini-3.6-flash",
+                "gemini-flash-latest"
             ]
             candidate_models = []
             for m in models_to_try:

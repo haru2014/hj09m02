@@ -59,7 +59,8 @@ const state = {
   chartInstance: null,
   timeseriesData: [],
   allPapers: [],
-  theme: localStorage.getItem("pet_nav_theme") || "dark"
+  theme: localStorage.getItem("pet_nav_theme") || "dark",
+  viewMode: localStorage.getItem("pet_nav_view_mode") || "auto"
 };
 
 // Research Methodology Shifts per Category
@@ -107,6 +108,10 @@ const TIMELINE_METRICS = {
 const el = {
   themeToggleBtn: document.getElementById("themeToggleBtn"),
   themeIcon: document.getElementById("themeIcon"),
+  btnToggleViewMode: document.getElementById("btnToggleViewMode"),
+  viewModeIcon: document.getElementById("viewModeIcon"),
+  viewModeLabel: document.getElementById("viewModeLabel"),
+  mobileBottomNav: document.getElementById("mobileBottomNav"),
   apiStatusBadge: document.getElementById("apiStatusBadge"),
   apiStatusLabel: document.getElementById("apiStatusLabel"),
   navTabs: document.getElementById("mainNavTabs"),
@@ -223,6 +228,29 @@ function applyTheme(theme) {
   el.themeIcon.textContent = theme === "dark" ? "🌙" : "☀️";
   if (state.chartInstance) {
     updateChartTheme();
+  }
+}
+
+function applyViewMode(mode) {
+  state.viewMode = mode;
+  localStorage.setItem("pet_nav_view_mode", mode);
+  document.documentElement.setAttribute("data-view-mode", mode);
+  updateViewModeUI();
+}
+
+function updateViewModeUI() {
+  const isMobileScreen = window.innerWidth <= 768;
+  const currentMode = state.viewMode;
+  const isEffectiveMobile = currentMode === "mobile" || (currentMode === "auto" && isMobileScreen);
+
+  if (isEffectiveMobile) {
+    if (el.viewModeIcon) el.viewModeIcon.textContent = "🖥️";
+    if (el.viewModeLabel) el.viewModeLabel.textContent = "PC 뷰";
+    if (el.btnToggleViewMode) el.btnToggleViewMode.title = "PC 화면 모드로 전환";
+  } else {
+    if (el.viewModeIcon) el.viewModeIcon.textContent = "📱";
+    if (el.viewModeLabel) el.viewModeLabel.textContent = "모바일 뷰";
+    if (el.btnToggleViewMode) el.btnToggleViewMode.title = "모바일 화면 모드로 전환";
   }
 }
 
@@ -929,7 +957,7 @@ function switchTab(tabId) {
   el.tabPanes.forEach(pane => {
     pane.classList.toggle("active", pane.id === tabId);
   });
-  document.querySelectorAll(".tab-btn").forEach(btn => {
+  document.querySelectorAll(".tab-btn, .mobile-nav-item").forEach(btn => {
     const isActive = btn.dataset.tab === tabId;
     btn.classList.toggle("active", isActive);
     btn.setAttribute("aria-selected", isActive);
@@ -961,6 +989,32 @@ function setupEventListeners() {
     const nextTheme = state.theme === "dark" ? "light" : "dark";
     applyTheme(nextTheme);
   });
+
+  // View Mode Toggle (PC <-> Mobile)
+  if (el.btnToggleViewMode) {
+    el.btnToggleViewMode.addEventListener("click", () => {
+      const isMobileScreen = window.innerWidth <= 768;
+      const isCurrentlyMobile = state.viewMode === "mobile" || (state.viewMode === "auto" && isMobileScreen);
+      const nextMode = isCurrentlyMobile ? "pc" : "mobile";
+      applyViewMode(nextMode);
+      showToast(nextMode === "mobile" ? "📱 모바일 화면 모드로 전환되었습니다." : "🖥️ PC 화면 모드로 전환되었습니다.", "info");
+    });
+  }
+
+  // Mobile Bottom Navigation Tabs
+  if (el.mobileBottomNav) {
+    el.mobileBottomNav.addEventListener("click", e => {
+      const item = e.target.closest(".mobile-nav-item");
+      if (item && item.dataset.tab) {
+        switchTab(item.dataset.tab);
+      }
+    });
+  }
+
+  // Window resize to update view mode UI
+  window.addEventListener("resize", debounce(() => {
+    updateViewModeUI();
+  }, 150));
 
   // Navigation Tabs
   el.navTabs.addEventListener("click", e => {
@@ -1136,6 +1190,7 @@ function debounce(func, wait) {
 // ========================================================
 document.addEventListener("DOMContentLoaded", async () => {
   applyTheme(state.theme);
+  applyViewMode(state.viewMode);
   setupEventListeners();
 
   // Initial connection check

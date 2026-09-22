@@ -278,6 +278,35 @@ body {
   border-color: var(--primary);
 }
 
+/* View Mode Switcher Button (PC <-> Mobile) */
+.view-toggle-btn {
+  height: 38px;
+  padding: 0 0.85rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.view-toggle-btn:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  color: var(--primary-light);
+}
+
+.view-toggle-btn #viewModeIcon {
+  font-size: 0.95rem;
+}
+
 /* Main Container */
 .main-content {
   flex: 1;
@@ -1450,6 +1479,13 @@ body {
   margin-top: 0.3rem;
 }
 
+/* ========================================================
+   Mobile Bottom Navigation Bar (Hidden on desktop by default)
+   ======================================================== */
+.mobile-bottom-nav {
+  display: none;
+}
+
 /* Responsive Breakpoints */
 @media (max-width: 1200px) {
   .summary-cards-grid {
@@ -1460,29 +1496,572 @@ body {
   }
 }
 
-@media (max-width: 768px) {
-  .app-header {
-    padding: 0 1rem;
-    height: auto;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding-bottom: 0.75rem;
+/* ========================================================
+   Desktop Mobile Simulation Frame (when PC user toggles 모바일 뷰)
+   ======================================================== */
+@media (min-width: 769px) {
+  [data-view-mode="mobile"] {
+    background-color: #030712 !important;
   }
-  .header-center {
+  [data-view-mode="mobile"] body {
+    background-color: #030712 !important;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 0;
+    min-height: 100vh;
+  }
+  [data-view-mode="mobile"] .app-layout {
+    max-width: 440px;
     width: 100%;
-    overflow-x: auto;
+    margin: 0 auto;
+    border-radius: 40px;
+    border: 8px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 25px 65px -10px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    min-height: 850px;
+    background: var(--bg-primary);
   }
-  .summary-cards-grid {
-    grid-template-columns: 1fr;
+  [data-view-mode="mobile"] .mobile-bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
   }
+}
+
+/* Force PC layout if user on mobile requests PC view */
+[data-view-mode="pc"] body {
+  min-width: 1024px;
+  overflow-x: auto;
+}
+[data-view-mode="pc"] .app-header {
+  height: var(--header-height) !important;
+  flex-direction: row !important;
+  padding: 0 2rem !important;
+}
+[data-view-mode="pc"] .header-center {
+  display: flex !important;
+}
+[data-view-mode="pc"] .header-center .nav-tabs {
+  display: flex !important;
+}
+[data-view-mode="pc"] .brand-subtitle {
+  display: block !important;
+}
+[data-view-mode="pc"] .mobile-bottom-nav {
+  display: none !important;
+}
+[data-view-mode="pc"] .main-content {
+  padding-bottom: 2rem !important;
+}
+[data-view-mode="pc"] .chat-dashboard-grid {
+  grid-template-columns: 1fr 1.15fr !important;
+}
+[data-view-mode="pc"] .summary-cards-grid {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+/* ========================================================
+   Standard Mobile (<= 768px) and Forced Mobile Mode Rules
+   ======================================================== */
+@media (max-width: 768px) {
+  .app-layout {
+    padding-bottom: 68px; /* space for mobile bottom nav */
+  }
+
+  .app-header {
+    height: auto;
+    min-height: 56px;
+    padding: 0.6rem 0.9rem;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .header-left .brand-logo {
+    gap: 0.5rem;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+  }
+
+  .brand-title {
+    font-size: 0.98rem;
+    letter-spacing: -0.01em;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  /* Hide header center tabs on mobile (delegated to bottom navigation) */
+  .header-center {
+    display: none;
+  }
+
+  .header-right {
+    gap: 0.4rem;
+  }
+
+  .status-indicator {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.7rem;
+  }
+
+  .view-toggle-btn {
+    height: 32px;
+    padding: 0 0.55rem;
+    font-size: 0.72rem;
+  }
+  .view-mode-label {
+    display: none; /* Icon-only on mobile top bar for compact display */
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
   .main-content {
-    padding: 1rem;
+    padding: 0.85rem;
   }
+
+  /* Tab 1: AI Chat & Trends Dashboard */
+  .section-heading-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+  }
+
+  .section-desc {
+    font-size: 0.82rem;
+  }
+
+  /* Horizontal swipe scroll for topic chips */
+  .topic-chips-container {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.45rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.85rem;
+    scrollbar-width: none;
+  }
+  .topic-chips-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chip-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  /* 2x2 compact summary cards */
+  .summary-cards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .summary-card {
+    padding: 0.75rem;
+  }
+
+  .metric-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .metric-title {
+    font-size: 0.72rem;
+  }
+
+  .metric-value {
+    font-size: 1.25rem;
+  }
+
+  .metric-trend {
+    font-size: 0.7rem;
+  }
+
+  /* Chat & Chart Grid */
+  .chat-dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  .chart-card {
+    padding: 0.9rem;
+  }
+
+  .chart-canvas-wrap {
+    height: 220px !important;
+  }
+
+  .methodology-timeline {
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .timeline-card {
+    padding: 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  /* Chat Column & Box */
+  .chat-box {
+    border-radius: var(--radius-md);
+  }
+
+  .chat-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .chat-title {
+    font-size: 0.95rem;
+  }
+
+  .chat-subtitle {
+    font-size: 0.7rem;
+  }
+
+  .chat-messages {
+    padding: 0.85rem;
+    max-height: 400px;
+    min-height: 280px;
+    gap: 0.85rem;
+  }
+
+  .message-bubble {
+    max-width: 95%;
+    gap: 0.5rem;
+  }
+
+  .message-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.95rem;
+  }
+
+  .message-text {
+    padding: 0.75rem 0.95rem;
+    font-size: 0.85rem;
+  }
+
+  /* Horizontal swipe scroll for prompt chips */
+  .quick-prompts-bar {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    scrollbar-width: none;
+  }
+  .quick-prompts-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .prompt-chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.7rem;
+  }
+
+  .chat-input-form {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .chat-input-field {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    padding: 0.65rem 0.85rem;
+  }
+
+  .btn-send-message {
+    width: 38px;
+    height: 38px;
+  }
+
+  /* Tab 2: Time-Series Data Management */
   .data-toolbar {
     flex-direction: column;
-    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.85rem;
   }
+
   .toolbar-left, .toolbar-right {
-    justify-content: space-between;
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
   }
+
+  .toolbar-left .form-select, .toolbar-left .search-wrapper {
+    width: 100%;
+  }
+
+  .toolbar-right {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-right .btn {
+    flex: 1 1 calc(50% - 0.3rem);
+    padding: 0.5rem 0.5rem;
+    font-size: 0.75rem;
+    justify-content: center;
+  }
+
+  .toolbar-right #btnOpenAddModal {
+    flex: 1 1 100%;
+  }
+
+  .data-stats-banner {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .stat-pill {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.45rem 0.75rem;
+  }
+
+  .data-table th, .data-table td {
+    padding: 0.55rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  /* Tab 3: Conversations */
+  .conversations-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem;
+  }
+
+  /* Tab 4: Papers */
+  .papers-toolbar {
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.85rem;
+  }
+
+  .papers-toolbar .filter-item, .papers-toolbar .search-item {
+    width: 100%;
+  }
+
+  .papers-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.85rem;
+  }
+
+  /* Modals on Mobile */
+  .modal-box {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 1rem auto;
+    padding: 1.15rem;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .form-input, .form-select, .form-textarea {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+  }
+
+  /* Show Bottom Nav on Mobile */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 62px;
+    background: rgba(17, 24, 39, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-subtle);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    z-index: 999;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 0.5rem;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px 0;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+
+  .mobile-nav-item .m-icon {
+    font-size: 1.15rem;
+    transition: transform 0.2s ease;
+  }
+
+  .mobile-nav-item:hover, .mobile-nav-item.active {
+    color: var(--primary-light);
+  }
+
+  .mobile-nav-item.active .m-icon {
+    transform: scale(1.15);
+  }
+
+  .mobile-nav-item.active .m-label {
+    font-weight: 700;
+    color: #ffffff;
+  }
+}
+
+/* Also apply mobile styling when [data-view-mode="mobile"] is active on desktop */
+[data-view-mode="mobile"] .app-layout {
+  padding-bottom: 68px;
+}
+[data-view-mode="mobile"] .app-header {
+  height: auto;
+  min-height: 56px;
+  padding: 0.6rem 0.9rem;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+[data-view-mode="mobile"] .brand-subtitle,
+[data-view-mode="mobile"] .header-center {
+  display: none !important;
+}
+[data-view-mode="mobile"] .view-mode-label {
+  display: none;
+}
+[data-view-mode="mobile"] .summary-cards-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 0.65rem;
+}
+[data-view-mode="mobile"] .chat-dashboard-grid {
+  grid-template-columns: 1fr !important;
+}
+[data-view-mode="mobile"] .topic-chips-container {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 0.45rem;
+  padding-bottom: 0.5rem;
+}
+[data-view-mode="mobile"] .chip-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+[data-view-mode="mobile"] .data-toolbar {
+  flex-direction: column;
+}
+[data-view-mode="mobile"] .toolbar-left,
+[data-view-mode="mobile"] .toolbar-right {
+  width: 100%;
+  flex-direction: column;
+}
+[data-view-mode="mobile"] .toolbar-right {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+[data-view-mode="mobile"] .conversations-grid,
+[data-view-mode="mobile"] .papers-grid {
+  grid-template-columns: 1fr !important;
+}
+[data-view-mode="mobile"] .modal-box {
+  width: 95% !important;
+  max-width: 95% !important;
+}
+[data-view-mode="mobile"] .mobile-bottom-nav {
+  display: flex !important;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 62px;
+  background: rgba(17, 24, 39, 0.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-subtle);
+  z-index: 999;
+  justify-content: space-around;
+  align-items: center;
+}
+[data-view-mode="mobile"] .mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+[data-view-mode="mobile"] .mobile-nav-item .m-icon {
+  font-size: 1.15rem;
+}
+[data-view-mode="mobile"] .mobile-nav-item.active {
+  color: var(--primary-light);
+}
+[data-view-mode="mobile"] .mobile-nav-item.active .m-label {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+[data-theme="light"] .mobile-bottom-nav,
+[data-theme="light"][data-view-mode="mobile"] .mobile-bottom-nav {
+  background: rgba(255, 255, 255, 0.96);
+  border-top-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .mobile-nav-item.active .m-label,
+[data-theme="light"][data-view-mode="mobile"] .mobile-nav-item.active .m-label {
+  color: var(--primary-dark);
 }

@@ -62,6 +62,12 @@
           ⚙️
         </button>
 
+        <!-- View Mode Switcher (PC / Mobile) -->
+        <button class="view-toggle-btn" id="btnToggleViewMode" title="화면 보기 모드 전환 (PC ↔ 모바일)">
+          <span id="viewModeIcon">📱</span>
+          <span class="view-mode-label" id="viewModeLabel">모바일 뷰</span>
+        </button>
+
         <!-- Dark/Light Theme Toggle -->
         <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" title="다크/라이트 모드 전환">
           <span id="themeIcon">🌙</span>
@@ -432,6 +438,26 @@
         <p class="footer-meta">FastAPI · Firebase Firestore · OpenAI Context Injection · Vanilla HTML5/CSS3/ES6</p>
       </div>
     </footer>
+
+    <!-- Mobile Bottom Navigation Bar (모바일 전용 하단 탭 메뉴) -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="모바일 하단 탐색">
+      <button type="button" class="mobile-nav-item active" data-tab="tab-chat" id="mNavChat">
+        <span class="m-icon">💬</span>
+        <span class="m-label">AI 비서</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-tab="tab-data" id="mNavData">
+        <span class="m-icon">📊</span>
+        <span class="m-label">시계열</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-tab="tab-history" id="mNavHistory">
+        <span class="m-icon">📜</span>
+        <span class="m-label">대화기록</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-tab="tab-papers" id="mNavPapers">
+        <span class="m-icon">📚</span>
+        <span class="m-label">논문</span>
+      </button>
+    </nav>
   </div>
 
   <!-- ==================================================== -->
